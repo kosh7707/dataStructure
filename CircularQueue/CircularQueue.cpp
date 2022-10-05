@@ -20,9 +20,14 @@ public:
     }
     void push(T t) {
         if (_front == (_rear+1)%_capacity) {
-            if (_front > _rear) {
-
-            }
+            cout << "expand capacity\n";
+            T* newQueue = new T[_capacity*2];
+            int newFront = _capacity*2/3; int newRear = newFront + _capacity - 1;
+            memcpy(newQueue+newFront, _array+_front, sizeof(T)*(_capacity-_front));
+            memcpy(newQueue+newFront+_capacity-_front, _array, sizeof(T)*_rear);
+            delete[] _array;
+            _array = newQueue; _capacity = _capacity*2;
+            _front = newFront; _rear = newRear;
         }
         _array[_rear] = t;
         _rear = (_rear + 1) % _capacity;
@@ -60,21 +65,27 @@ int main() {
     std::cout.tie(nullptr);
     srand(time(nullptr));
 
-    CircularQueue<int> cq(8);
+    CircularQueue<int> cq(2);
     cout << "------------------------push------------------------" << endl;
-    for (int i=0; i<25; i++) {
-        cq.push(i); cout << cq << endl;
+    for (int i=0; i<rand()%10+10; i++) {
+        int temp; temp = rand()%20+5;
+        cout << "push " << temp << endl;
+        cq.push(temp); cout << cq << endl;
     }
     cout << "------------------------pop------------------------" << endl;
-    for (int i=0; i<17; i++) {
+    for (int i=0; i<10; i++) {
+        cout << "pop" << endl;
         cq.pop(); cout << cq << endl;
     }
     cout << "------------------------push------------------------" << endl;
-    for (int i=0; i<12; i++) {
-        cq.push(i); cout << cq << endl;
+    for (int i=0; i<rand()%10+10; i++) {
+        int temp; temp = rand()%20+5;
+        cout << "push " << temp << endl;
+        cq.push(temp); cout << cq << endl;
     }
     cout << "------------------------pop------------------------" << endl;
-    for (int i=0; i<12; i++) {
+    for (int i=0; i<10; i++) {
+        cout << "pop" << endl;
         cq.pop(); cout << cq << endl;
     }
 }
