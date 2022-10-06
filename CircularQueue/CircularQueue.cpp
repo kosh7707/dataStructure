@@ -46,14 +46,14 @@ public:
         return _array[_rear-1];
     }
     friend ostream& operator << (ostream& os, CircularQueue cq) {
-        cout << "_front: " << cq._front << " | _rear: " << cq._rear << " | _capacity: " << cq._capacity << endl;
+        os << "_front: " << cq._front << " | _rear: " << cq._rear << " | _capacity: " << cq._capacity << endl;
         if (cq._front > cq._rear) {
             for (int i=cq._front; i<cq._rear+cq._capacity; i++)
-                cout << "[" << i%cq._capacity << "]:" << cq._array[i%cq._capacity] << " | ";
+                os << "[" << i%cq._capacity << "]:" << cq._array[i%cq._capacity] << " | ";
         }
         else {
             for (int i=cq._front; i<cq._rear; i++)
-                cout << "[" << i << "]:" << cq._array[i] << " | ";
+                os << "[" << i << "]:" << cq._array[i] << " | ";
         }
         return os;
     }
