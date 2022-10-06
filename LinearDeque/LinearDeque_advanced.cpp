@@ -71,7 +71,7 @@ void LinearDeque<T>::push_rear(T t) {
         _rear = _front = _capacity/3; // 시작점을 용량의 1/3 지점으로 함.
     }
     else {
-        if (_rear == _capacity-1)  // index[0]에 원소가 존재할 시 expand capacity
+        if (_rear == _capacity-1)  // index[_capacity-1]에 원소가 존재할 시 expand capacity
             ChangeSizeID();
         _rear++;
     }
