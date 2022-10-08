@@ -85,9 +85,8 @@ public:
         ChainIterator<T> chainIterator(chain);
         if (!chainIterator.Null()) {
             os << chainIterator.First();
-            while (!chainIterator.NextNull()) {
+            while (!chainIterator.NextNull())
                 os << " -> " << chainIterator.Next();
-            }
         }
         return os;
     }
