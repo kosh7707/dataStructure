@@ -3,18 +3,15 @@
 #include <ctime>
 using namespace std;
 
-template <typename T> class Node;
-template <typename T> class List;
-template <typename T> class CircularList;
-template <typename T, class LISTCLASS> class ListIterator;
+template <class T> class Node;
+template <class T> class CircularList;
+template <class T> class ListIterator;
 
 /* Node ---------------------------------------------------------- */
-template <typename T>
+template <class T>
 class Node {
-    friend class List<T>;
     friend class CircularList<T>;
-    template <typename T1, class LISTCLASS> // partial specialized의 묘리가 여기 담겨있다.
-    friend class ListIterator;
+    friend class ListIterator<T>;
 public:
     Node(T data) : data(data) {
         link = nullptr;
@@ -25,65 +22,10 @@ private:
 };
 /* --------------------------------------------------------------- */
 
-/* List ---------------------------------------------------------- */
-template <typename T>
-class List {
-    friend class ListIterator<T, List>;
-    friend class CircularList<T>;
-public:
-    List() {
-        first = nullptr;
-    }
-    virtual void Add(T x) {
-        Node<T>* newNode = new Node<T>(x);
-        if (first == nullptr) first = newNode;
-        else {
-            newNode->link = first;
-            first = newNode;
-        }
-    }
-    virtual void Delete(T x) {
-        if (first == nullptr)
-            cout << "Error - List is empty. not deleted" << endl;
-        else if (first->data == x) {
-            Node<T>* temp = first;
-            delete first;
-            first = temp->link;
-        }
-        else {
-            Node<T>* prev = first;
-            Node<T>* next = first->link;
-            while (next != nullptr and next->data != x) {
-                prev = next;
-                next = next->link;
-            }
-            if (next == nullptr) ;
-                // cout << "Error - Can't find element. not deleted" << endl;
-            else {
-                prev->link = next->link;
-                delete next;
-            }
-        }
-    }
-    friend ostream& operator << (ostream& os, const List<T>& ls) {
-        ListIterator<T, List> listIterator(ls);
-        if (listIterator.Null()) os << "List is empty";
-        else {
-            os << listIterator.First();
-            while (!listIterator.NextNull())
-                os << " -> " << listIterator.Next();
-        }
-        return os;
-    }
-private:
-    Node<T>* first;
-};
-/* --------------------------------------------------------------- */
-
 /* CircularList -------------------------------------------------- */
-template <typename T>
-class CircularList : public List<T> {
-    friend class ListIterator<T, CircularList>;
+template <class T>
+class CircularList {
+    friend class ListIterator<T>;
 public:
     CircularList() {
         first = last = nullptr;
@@ -151,7 +93,7 @@ public:
         } while (prev != ls.first);
     }
     friend ostream& operator << (ostream& os, const CircularList<T>& cq) {
-        ListIterator<T, CircularList> listIterator(cq);
+        ListIterator<T> listIterator(cq);
         if (listIterator.Null()) os << "List is empty";
         else {
             os << listIterator.First();
@@ -167,10 +109,10 @@ private:
 /* --------------------------------------------------------------- */
 
 /* ListIterator -------------------------------------------------- */
-template <typename T, class LISTCLASS>
+template <class T>
 class ListIterator {
 public:
-    ListIterator(const LISTCLASS& ls) : list(ls), current(ls.first) {
+    ListIterator(const CircularList<T>& ls) : list(ls), current(ls.first) {
         cout << endl << "List Iterator is constructed" << endl;
     }
     bool Null() {
@@ -200,18 +142,18 @@ public:
         return *this;
     }
     ListIterator operator ++ (int) {
-        ListIterator<T, LISTCLASS> old = *this;
+        ListIterator<T> old = *this;
         current = current->link;
         return old;
     }
-    bool operator != (const ListIterator<T, LISTCLASS> b) const {
+    bool operator != (const ListIterator<T> b) const {
         return current != b.current;
     }
-    bool operator == (const ListIterator<T, LISTCLASS> b) const {
+    bool operator == (const ListIterator<T> b) const {
         return current == b.current;
     }
 private:
-    const LISTCLASS& list;
+    const CircularList<T>& list;
     Node<T>* current;
 };
 
