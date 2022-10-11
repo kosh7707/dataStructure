@@ -110,15 +110,15 @@ int main() {
         ld.push_front(temp);
         cout << ld << endl;
     }
-    for (int i=0; i<10; i++) {
-        cout << "pop rear " << endl;
-        ld.pop_rear();
-        cout << ld << endl;
-    }
     for (int i=0; i<rand()%10+10; i++) {
         int temp; temp = rand()%20+1;
         cout << "push rear " << temp << endl;
         ld.push_rear(temp);
+        cout << ld << endl;
+    }
+    for (int i=0; i<10; i++) {
+        cout << "pop rear " << endl;
+        ld.pop_rear();
         cout << ld << endl;
     }
     for (int i=0; i<10; i++) {
