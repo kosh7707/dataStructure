@@ -7,6 +7,7 @@ template <class T> class Term;
 template <class T> class Chain;
 template <class T> class ChainNode;
 template <class T> class ChainIterator;
+template <class T> class Polynomial;
 
 /* Term begin ---------------------------------------------------------- */
 template <class T>
@@ -21,6 +22,15 @@ public:
         os << term.coef << "^" << term.exp;
         return os;
     }
+    bool operator < (Term<T> t) {
+        return exp < t.exp;
+    }
+    bool operator > (Term<T> t) {
+        return exp > t.exp;
+    }
+    bool operator == (Term<T> t) {
+        return exp == t.exp;
+    }
 };
 /* --------------------------------------------------------------------- */
 
@@ -34,27 +44,83 @@ public:
         data = element;
         link = 0;
     }
-private:
     T data;
     ChainNode<T>* link;
+};
+/* --------------------------------------------------------------------- */
+
+/* ChainIterator begin ------------------------------------------------- */
+template <class T>
+class ChainIterator {
+public:
+    ChainIterator(ChainNode<T>* node) : current(node) {}
+    T& operator * () const { return &current->data; }
+    T* operator -> () const { return &current->data; }
+    bool operator && (ChainIterator<T> iter) const {
+        return current != nullptr and iter.current != nullptr;
+    }
+    bool isEmpty() const { return current == nullptr; }
+    ChainIterator<T>& operator ++ () {
+        current = current->link;
+        return *this;
+    }
+    ChainIterator<T> operator ++ (int) {
+        ChainIterator<T> old = *this;
+        current = current->link;
+        return old;
+    }
+    bool NotNull() {
+        return current != nullptr;
+    }
+    bool NextNotNull() {
+        return current != nullptr and current->link != nullptr;
+    }
+    T* First() {
+        if (NotNull())
+            return &current->data;
+        else return 0;
+    }
+    T* Next() {
+        if (NextNotNull()) {
+            current = current->link;
+            return &current->data;
+        }
+        else return 0;
+    }
+private:
+    ChainNode<T>* current;
 };
 /* --------------------------------------------------------------------- */
 
 /* Chain begin --------------------------------------------------------- */
 template <class T>
 class Chain {
+    friend class Polynomial<T>;
 public:
     Chain() { first = 0; }
     void Add(const T& element) { //add a new node after first
         ChainNode<T>* newNode = new ChainNode<T>(element);
-        if (first != nullptr) {
+        if (first == nullptr) {
             newNode->link = first;
             first = newNode;
         }
-        else first = newNode;
+        else if (first->data < element) {
+            newNode->link = first;
+            first = newNode;
+        }
+        else {
+            ChainNode<T>* prev = first;
+            ChainNode<T>* next = first->link;
+            while (next != nullptr and next->data > element) {
+                prev = next;
+                next = next->link;
+            }
+            newNode->link = prev->link;
+            prev->link = newNode;
+        }
     }
     void Delete() { //delete the first element after first
-        ChainNode<T> *current, *next;
+        ChainNode<T> *next;
         next = first->link;
         if (first != nullptr) {
             ChainNode<T>* temp = first;
@@ -105,12 +171,10 @@ public:
         return length;
     }
     friend ostream& operator << (ostream& os, const Chain<T> chain) {
-        if (chain.first != nullptr) {
-            ChainNode<T>* temp = chain.first;
-            while (temp != nullptr) {
-                os << temp->data << " + ";
-                temp = temp->link;
-            }
+        ChainIterator<T> chainIterator(chain.first);
+        os << *chainIterator.First();
+        while (chainIterator.NextNotNull()) {
+            os << " + " << *chainIterator.Next() ;
         }
         return os;
     }
@@ -125,49 +189,6 @@ private:
 };
 /* --------------------------------------------------------------------- */
 
-/* ChainIterator begin ------------------------------------------------- */
-template <class T>
-class ChainIterator {
-public:
-    ChainIterator(ChainNode<T>* node) : current(node) {}
-    T& operator * () const { return current->data; }
-    T& operator -> () const { return &current->data; }
-    bool operator && (ChainIterator<T> iter) const {
-        return current != nullptr and iter.current != nullptr;
-    }
-    bool isEmpty() const { return current == nullptr; }
-    ChainIterator<T>& operator ++ () {
-        current = current->link;
-        return *this;
-    }
-    ChainIterator<T> operator ++ (int) {
-        ChainIterator<T> old = *this;
-        current = current->link;
-        return old;
-    }
-    bool NotNull() {
-        return current != nullptr;
-    }
-    bool NextNotNull() {
-        return current != nullptr and current->link != nullptr;
-    }
-    T* First() {
-        if (NotNull())
-            return &current->data;
-        else return 0;
-    }
-    T* Next() {
-        if (NextNotNull()) {
-            current = current->link;
-            return &current->data;
-        }
-        else return 0;
-    }
-private:
-    ChainNode<T>* current;
-};
-/* --------------------------------------------------------------------- */
-
 /* Polynomial begin ---------------------------------------------------- */
 template <class T>
 class Polynomial {
@@ -177,12 +198,12 @@ public:
     Polynomial<T> operator + (const Polynomial<T>& b) const {
         Term<T> temp;
         ChainIterator<Term<T>> ai = poly.begin();
-        ChainIterator<Term<T>> bi = poly.begin();
+        ChainIterator<Term<T>> bi = b.poly.begin();
         Polynomial<T> c;
 
         while ( (!ai.isEmpty()) and (!bi.isEmpty()) ) {
             if (ai->exp == bi->exp) {
-                int sum = ai->coef + bi->coef;
+                T sum = ai->coef + bi->coef;
                 if (sum) c.poly.InsertBack(temp.Set(sum, ai->exp));
                 ai++; bi++;
             }
@@ -224,29 +245,30 @@ private:
 
 int main() {
     srand(time(nullptr));
+    cout.precision(2);
+    cout << fixed; // 자리수 2자리 제한
 
-    Polynomial<double> polynomial;
-    for (int i=5; i>=0; i--) {
-        double coef;
-        coef = rand()/RAND_MAX*9;
-        if (rand()%2)
-            coef *= -1;
-        polynomial.add(coef, i);
+    Polynomial<double> polynomial1, polynomial2, polynomial3;
+    double coef1, coef2;
+    for (int i=0; i<=5; i++) {
+        coef1 = (double)rand()/RAND_MAX*9.0;
+        coef2 = (double)rand()/RAND_MAX*9.0;
+        if (rand()%2) coef1 *= -1;
+        if (rand()%2) coef2 *= -1;
+        polynomial1.add(coef1, i);
+        polynomial2.add(coef2, i);
     }
 
+    cout << "\npoly 1---------------------\n"
+         << polynomial1
+         << "\npoly 2---------------------\n"
+         << polynomial2 << endl;
+
+    polynomial3 = polynomial1 + polynomial2;
+
+    cout << "\npoly3 = poly1 + poly2--------------------\n"
+         << polynomial3 << endl;
 }
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
