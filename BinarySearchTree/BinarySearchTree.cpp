@@ -3,6 +3,7 @@
 #include <cstdlib>
 
 using namespace std;
+enum Mode { LEFT = 0, RIGHT = 1, };
 const int DefaultSize = 100;
 
 template <class T> class Stack;
@@ -179,7 +180,7 @@ public:
     Tree() {
         root = nullptr;
     }
-    Tree(const Tree& tree) {
+    Tree(const Tree<T>& tree) {
         root = copy(tree.root);
     }
     Tree<T>* copy() {
@@ -306,6 +307,63 @@ public:
         }
         return retValue;
     }
+    T DeleteLargestElement() {
+
+    }
+    void Split(T i, Tree<T>& B, Tree<T>& C) {
+        if (!root) {
+            B.root = C.root = nullptr;
+            return ;
+        }
+        if (i == root->data) {
+            B.root = root->leftChild;
+            C.root = root->rightChild;
+            return ;
+        }
+        Mode mode = LEFT;
+        TreeNode<T>* PrevNode = nullptr;
+        TreeNode<T>* CurrentNode = root;
+        while (CurrentNode) {
+            if (i < CurrentNode->data) {
+                PrevNode = CurrentNode;
+                CurrentNode = CurrentNode->leftChild;
+                mode = LEFT;
+            }
+            else if (i > CurrentNode->data) {
+                PrevNode = CurrentNode;
+                CurrentNode = CurrentNode->rightChild;
+                mode = RIGHT;
+            }
+            else {
+                if (mode == LEFT) {
+                    PrevNode->leftChild = CurrentNode->rightChild;
+                    B.root = CurrentNode->leftChild;
+                }
+                else {
+                    PrevNode->rightChild = CurrentNode->leftChild;
+                    B.root = CurrentNode->rightChild;
+                }
+                C.root = root;
+                return;
+            }
+        }
+    }
+    static Tree<T>* ThreeWayJoin(Tree<T>* A, T root_data, Tree<T>* B) {
+        TreeNode<T>* newRootNode = new TreeNode<T>();
+        newRootNode->data = root_data;
+        newRootNode->leftChild = A->root;
+        newRootNode->rightChild = B->root;
+        Tree<T>* newTree = new Tree<T>();
+        newTree->root = newRootNode;
+        return newTree;
+    }
+    static Tree<T>* TwoWayJoin(Tree<T>* A, Tree<T>* B) {
+        if (!A and !B) return nullptr;
+        if (!A) return B;
+        if (!B) return A;
+        T LargestData = A->DeleteLargestElement();
+        return ThreeWayJoin(A, LargestData, B);
+    }
     friend bool operator == (const Tree<T>& a, const Tree<T>& b) {
         return TreeNode<T>::Compare(a.root, b.root);
     }
@@ -347,19 +405,6 @@ public:
         if (!stack.isEmpty()) {
             currentNode = *stack.pop();
             T* retValue = &currentNode->data;
-            currentNode = currentNode->rightChild;
-            return retValue;
-        }
-        else return nullptr;
-    }
-    TreeNode<T>* NextNode() {
-        while (currentNode) {
-            stack.push(currentNode);
-            currentNode = currentNode->leftChild;
-        }
-        if (!stack.isEmpty()) {
-            currentNode = *stack.pop();
-            TreeNode<T>* retValue = currentNode;
             currentNode = currentNode->rightChild;
             return retValue;
         }
@@ -423,18 +468,20 @@ public:
 //</editor-fold>
 
 int main(void) {
-    int item_count, remove_element, temp; char select;
+    int item_count, remove_element, temp, split_data; char select;
     srand(time(nullptr));
 
-    Tree<int> t;
+    Tree<int> tree;
+    Tree<int> splitTree1, splitTree2, joinedTree;
     do {
         cout << "\nBinarySearchTree Test" << endl
              << "[i]: Insert" << endl
              << "[r]: Remove" << endl
-             << "[d]: printInorder" << endl
-             << "[k]: printLevelorder" << endl
-             << "[f]: printPreorder" << endl
-             << "[g]: printPostorder" << endl
+             << "[s]: split and join" << endl
+             << "[d]: print inorder" << endl
+             << "[k]: print levelorder" << endl
+             << "[g]: print postorder" << endl
+             << "[f]: print preorder" << endl
              << "[h]: Copy and Compare" << endl
              << "[q]: Quit" << endl
              << "=>";
@@ -445,50 +492,65 @@ int main(void) {
                 cin >> item_count;
                 for (int i = 0; i < item_count; i++) {
                     temp = rand() % 100;
-                    if (!t.Insert(temp))
+                    if (!tree.Insert(temp))
                         cout << "Insert Duplicated data" << endl;
                 }
                 break;
             case 'r':
                 cout << "removed element =";
                 cin >> remove_element;
-                if (t.Delete(remove_element))
+                if (tree.Delete(remove_element))
                     cout << "Successfully deleted " << remove_element << endl;
                 else
                     cout << "Failed delete" << endl;
                 break;
+            case 's': {
+                cout << "input splited tree note :" << endl;
+                cin >> split_data;
+                tree.Split(split_data, splitTree1, splitTree2);
+                cout << "=========== ThreeWayJoin ===========" << endl;
+                cout << "split_data = " << split_data << endl;
+                cout << "splitTree1: " << endl;
+                splitTree1.printInorder();
+                cout << "splitTree2: " << endl;
+                splitTree2.printInorder();
+                joinedTree = *Tree<int>::ThreeWayJoin(&splitTree1, split_data, &splitTree2);
+                cout << "ThreeWayJoin Tree: " << endl;
+                joinedTree.printInorder();
+                break;
+            }
             case 'd': {
-                cout << "\nprintInorder" << endl;
-                t.printInorder();
-                cout << "\nprintNonRecursiveInorder" << endl;
-                t.printNonRecursiveInorder();
-                cout << "printOrderUseIterator" << endl;
-                InorderIterator<int> inorderIterator(t);
+                cout << "\nprint inorder" << endl;
+                tree.printInorder();
+                cout << "\nprint non-recursive inorder" << endl;
+                tree.printNonRecursiveInorder();
+                cout << "print order use iterator" << endl;
+                InorderIterator<int> inorderIterator(tree);
                 inorderIterator.print();
                 break;
             }
             case 'k': {
-                cout << "\nprintLevelorder" << endl;
-                t.printLevelorder();
-                cout << "\nprintOrderUseIterator" << endl;
-                LevelIterator<int> levelIterator(t);
+                cout << "\nprint level order" << endl;
+                tree.printLevelorder();
+                cout << "\nprint order use iterator" << endl;
+                LevelIterator<int> levelIterator(tree);
                 levelIterator.print();
                 break;
             }
-            case 'f': {
-                t.printPreorder();
-                break;
-            }
             case 'g': {
-                cout << "\nprintPostorder" << endl;
-                t.printPostorder();
-                cout << "\nprintOrderUseIterator" << endl;
-                PostIterator<int> postIterator(t);
+                cout << "\nprint postorder" << endl;
+                tree.printPostorder();
+                cout << "\nprint order use iterator" << endl;
+                PostIterator<int> postIterator(tree);
                 postIterator.print();
                 break;
             }
+            case 'f': {
+                tree.printPreorder();
+                break;
+            }
             case 'h':
-                if (t == Tree<int>(t)) cout << "compare result: true";
+                if (tree == Tree<int>(tree)) cout << "compare result: true";
                 else cout << "compare result: false";
                 break;
             case 'q':
@@ -500,7 +562,6 @@ int main(void) {
                 break;
         }
     } while(select != 'q');
-
     system("pause");
     return 0;
 }
