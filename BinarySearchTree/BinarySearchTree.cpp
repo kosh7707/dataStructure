@@ -269,7 +269,6 @@ public:
                 cout << "Tree has no element " << data << ".\n";
             else {
                 if (!DeletedNode->leftChild and !DeletedNode->rightChild) {
-                    // delete leafNode;
                     if (data < PrevNode->data)
                         PrevNode->leftChild = nullptr;
                     else
@@ -308,7 +307,15 @@ public:
         return retValue;
     }
     T DeleteLargestElement() {
-
+        InorderIterator<T> inorderIterator(*this);
+        T* temp_element = inorderIterator.Next();
+        T max_element = 0;
+        while (temp_element) {
+            if (max_element < *temp_element) max_element = *temp_element;
+            temp_element = inorderIterator.Next();
+        }
+        Delete(max_element);
+        return max_element;
     }
     void Split(T i, Tree<T>& B, Tree<T>& C) {
         if (!root) {
@@ -472,7 +479,6 @@ int main(void) {
     srand(time(nullptr));
 
     Tree<int> tree;
-    Tree<int> splitTree1, splitTree2, joinedTree;
     do {
         cout << "\nBinarySearchTree Test" << endl
              << "[i]: Insert" << endl
@@ -491,7 +497,7 @@ int main(void) {
                 cout << "The number of items =";
                 cin >> item_count;
                 for (int i = 0; i < item_count; i++) {
-                    temp = rand() % 100;
+                    temp = rand() % 50;
                     if (!tree.Insert(temp))
                         cout << "Insert Duplicated data" << endl;
                 }
@@ -505,18 +511,29 @@ int main(void) {
                     cout << "Failed delete" << endl;
                 break;
             case 's': {
+                Tree<int> temp_tree(tree);
+                Tree<int> splitTree1, splitTree2, joinedTree;
                 cout << "input splited tree note :" << endl;
                 cin >> split_data;
-                tree.Split(split_data, splitTree1, splitTree2);
+                temp_tree.Split(split_data, splitTree1, splitTree2);
                 cout << "=========== ThreeWayJoin ===========" << endl;
                 cout << "split_data = " << split_data << endl;
                 cout << "splitTree1: " << endl;
-                splitTree1.printInorder();
-                cout << "splitTree2: " << endl;
-                splitTree2.printInorder();
+                splitTree1.printPreorder();
+                cout << "\nsplitTree2: " << endl;
+                splitTree2.printPreorder();
                 joinedTree = *Tree<int>::ThreeWayJoin(&splitTree1, split_data, &splitTree2);
-                cout << "ThreeWayJoin Tree: " << endl;
-                joinedTree.printInorder();
+                cout << "\nThreeWayJoin Tree: " << endl;
+                joinedTree.printPreorder();
+                cout << "\n=========== TwoWayJoin ===========" << endl;
+                cout << "splitTree1: " << endl;
+                splitTree1.printPreorder();
+                cout << "\nsplitTree2: " << endl;
+                splitTree2.printPreorder();
+                cout << "\nTwoWayJoin Tree: " << endl;
+                joinedTree = *Tree<int>::TwoWayJoin(&splitTree1, &splitTree2);
+                joinedTree.printPreorder();
+                cout << endl;
                 break;
             }
             case 'd': {
