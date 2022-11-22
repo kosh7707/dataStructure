@@ -256,7 +256,7 @@ public:
         if (isEmpty())
             cout << "empty root" << endl;
         else {
-            TreeNode<T>* PrevNode = new TreeNode<T>();
+            TreeNode<T>* PrevNode = nullptr;
             TreeNode<T>* DeletedNode = root;
             while (DeletedNode and DeletedNode->data != data) {
                 PrevNode = DeletedNode;
@@ -269,26 +269,38 @@ public:
                 cout << "Tree has no element " << data << ".\n";
             else {
                 if (!DeletedNode->leftChild and !DeletedNode->rightChild) {
-                    if (data < PrevNode->data)
-                        PrevNode->leftChild = nullptr;
-                    else
-                        PrevNode->rightChild = nullptr;
+                    if (DeletedNode == root)
+                        root = nullptr;
+                    else {
+                        if (data < PrevNode->data)
+                            PrevNode->leftChild = nullptr;
+                        else
+                            PrevNode->rightChild = nullptr;
+                    }
                     free(DeletedNode);
                 }
                 else if (DeletedNode->leftChild and !DeletedNode->rightChild) {
-                    TreeNode<T>* tempNode = DeletedNode->leftChild;
-                    if (data < PrevNode->data)
-                        PrevNode->leftChild = tempNode;
-                    else
-                        PrevNode->rightChild = tempNode;
+                    if (DeletedNode == root)
+                        root = DeletedNode->leftChild;
+                    else {
+                        TreeNode<T>* tempNode = DeletedNode->leftChild;
+                        if (data < PrevNode->data)
+                            PrevNode->leftChild = tempNode;
+                        else
+                            PrevNode->rightChild = tempNode;
+                    }
                     free(DeletedNode);
                 }
                 else if (!DeletedNode->leftChild and DeletedNode->rightChild) {
-                    TreeNode<T>* tempNode = DeletedNode->rightChild;
-                    if (data < PrevNode->data)
-                        PrevNode->leftChild = tempNode;
-                    else
-                        PrevNode->rightChild = tempNode;
+                    if (DeletedNode == root)
+                        root = DeletedNode->rightChild;
+                    else {
+                        TreeNode<T>* tempNode = DeletedNode->rightChild;
+                        if (data < PrevNode->data)
+                            PrevNode->leftChild = tempNode;
+                        else
+                            PrevNode->rightChild = tempNode;
+                    }
                     free(DeletedNode);
                 }
                 else {
@@ -302,7 +314,6 @@ public:
                 }
                 retValue = true;
             }
-
         }
         return retValue;
     }
