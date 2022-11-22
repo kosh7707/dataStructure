@@ -230,6 +230,15 @@ public:
     bool isEmpty() {
         return root == nullptr;
     }
+    bool isExist(T t) {
+        InorderIterator<T> inorderIterator(*this);
+        T* temp_element = inorderIterator.Next();
+        while (temp_element) {
+            if (t == *temp_element) return true;
+            temp_element = inorderIterator.Next();
+        }
+        return false;
+    }
     bool Insert(T data) {
         TreeNode<T>* insertNode = new TreeNode<T>();
         insertNode->data = data;
@@ -252,70 +261,72 @@ public:
         return true;
     }
     bool Delete(T data) {
-        bool retValue = false;
-        if (isEmpty())
+        if (isEmpty()) {
             cout << "empty root" << endl;
+            return false;
+        }
+        if (!isExist(data)) {
+            cout << "Tree has no data " << data << "." << endl;
+            return false;
+        }
+        TreeNode<T>* PrevNode = nullptr;
+        TreeNode<T>* DeletedNode = root;
+        while (DeletedNode and DeletedNode->data != data) {
+            PrevNode = DeletedNode;
+            if (data > DeletedNode->data)
+                DeletedNode = DeletedNode->rightChild;
+            else
+                DeletedNode = DeletedNode->leftChild;
+        }
+        if (!DeletedNode)
+            cout << "Tree has no element " << data << ".\n";
         else {
-            TreeNode<T>* PrevNode = nullptr;
-            TreeNode<T>* DeletedNode = root;
-            while (DeletedNode and DeletedNode->data != data) {
-                PrevNode = DeletedNode;
-                if (data > DeletedNode->data)
-                    DeletedNode = DeletedNode->rightChild;
-                else
-                    DeletedNode = DeletedNode->leftChild;
-            }
-            if (!DeletedNode)
-                cout << "Tree has no element " << data << ".\n";
-            else {
-                if (!DeletedNode->leftChild and !DeletedNode->rightChild) {
-                    if (DeletedNode == root)
-                        root = nullptr;
-                    else {
-                        if (data < PrevNode->data)
-                            PrevNode->leftChild = nullptr;
-                        else
-                            PrevNode->rightChild = nullptr;
-                    }
-                    free(DeletedNode);
-                }
-                else if (DeletedNode->leftChild and !DeletedNode->rightChild) {
-                    if (DeletedNode == root)
-                        root = DeletedNode->leftChild;
-                    else {
-                        TreeNode<T>* tempNode = DeletedNode->leftChild;
-                        if (data < PrevNode->data)
-                            PrevNode->leftChild = tempNode;
-                        else
-                            PrevNode->rightChild = tempNode;
-                    }
-                    free(DeletedNode);
-                }
-                else if (!DeletedNode->leftChild and DeletedNode->rightChild) {
-                    if (DeletedNode == root)
-                        root = DeletedNode->rightChild;
-                    else {
-                        TreeNode<T>* tempNode = DeletedNode->rightChild;
-                        if (data < PrevNode->data)
-                            PrevNode->leftChild = tempNode;
-                        else
-                            PrevNode->rightChild = tempNode;
-                    }
-                    free(DeletedNode);
-                }
+            if (!DeletedNode->leftChild and !DeletedNode->rightChild) {
+                if (DeletedNode == root)
+                    root = nullptr;
                 else {
-                    InorderIterator<T> inorderSuccessor(*this);
-                    T tempData = *inorderSuccessor.Next();
-                    while (tempData != data)
-                        tempData = *inorderSuccessor.Next();
-                    tempData = *inorderSuccessor.Next();
-                    Delete(tempData);
-                    DeletedNode->data = tempData;
+                    if (data < PrevNode->data)
+                        PrevNode->leftChild = nullptr;
+                    else
+                        PrevNode->rightChild = nullptr;
                 }
-                retValue = true;
+                free(DeletedNode);
+            }
+            else if (DeletedNode->leftChild and !DeletedNode->rightChild) {
+                if (DeletedNode == root)
+                    root = DeletedNode->leftChild;
+                else {
+                    TreeNode<T>* tempNode = DeletedNode->leftChild;
+                    if (data < PrevNode->data)
+                        PrevNode->leftChild = tempNode;
+                    else
+                        PrevNode->rightChild = tempNode;
+                }
+                free(DeletedNode);
+            }
+            else if (!DeletedNode->leftChild and DeletedNode->rightChild) {
+                if (DeletedNode == root)
+                    root = DeletedNode->rightChild;
+                else {
+                    TreeNode<T>* tempNode = DeletedNode->rightChild;
+                    if (data < PrevNode->data)
+                        PrevNode->leftChild = tempNode;
+                    else
+                        PrevNode->rightChild = tempNode;
+                }
+                free(DeletedNode);
+            }
+            else {
+                InorderIterator<T> inorderSuccessor(*this);
+                T tempData = *inorderSuccessor.Next();
+                while (tempData != data)
+                    tempData = *inorderSuccessor.Next();
+                tempData = *inorderSuccessor.Next();
+                Delete(tempData);
+                DeletedNode->data = tempData;
             }
         }
-        return retValue;
+        return true;
     }
     T DeleteLargestElement() {
         InorderIterator<T> inorderIterator(*this);
@@ -329,9 +340,13 @@ public:
         return max_element;
     }
     void Split(T i, Tree<T>& B, Tree<T>& C) {
-        if (!root) {
+        if (isEmpty()) {
             B.root = C.root = nullptr;
             return ;
+        }
+        if (!isExist(i)) {
+            cout << "Tree has no data " << i << "." << endl;
+            return;
         }
         if (i == root->data) {
             B.root = root->leftChild;
@@ -524,7 +539,7 @@ int main(void) {
             case 's': {
                 Tree<int> temp_tree(tree);
                 Tree<int> splitTree1, splitTree2, joinedTree;
-                cout << "input splited tree note :" << endl;
+                cout << "input splited tree note :";
                 cin >> split_data;
                 temp_tree.Split(split_data, splitTree1, splitTree2);
                 cout << "=========== ThreeWayJoin ===========" << endl;
