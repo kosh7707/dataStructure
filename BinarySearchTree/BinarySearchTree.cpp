@@ -3,8 +3,8 @@
 #include <cstdlib>
 
 using namespace std;
-enum Mode { LEFT = 0, RIGHT = 1, };
 const int DefaultSize = 100;
+enum Mode {LEFT, RIGHT};
 
 template <class T> class Stack;
 template <class T> class Queue;
@@ -137,6 +137,9 @@ public:
             return true;
         return false;
     }
+    int getBalanceFactor() {
+        return balanceFactor;
+    }
     friend ostream& operator << (ostream& os, TreeNode<T> treeNode) {
         os << "{data:" << treeNode.data << ", bF:" << treeNode.balanceFactor << "}";
         return os;
@@ -199,6 +202,7 @@ public:
     }
     Tree(const Tree<T>& tree) {
         root = copy(tree.root);
+        calculateBalanceFactor();
     }
     Tree<T>* copy() {
         Tree<T> newTree = new Tree<T>(this);
@@ -247,6 +251,15 @@ public:
     void calculateBalanceFactor() {
         calculateBalanceFactor(root);
     }
+    void reBalancing() {
+        Tree<int> tempTree(*this);
+        Tree<int> splitTree1, splitTree2;
+        TreeNode<int>* unbalancedTreeNode = tempTree.getUnbalancedTreeNode();
+        int split_data = tempTree.getSplitData(unbalancedTreeNode);
+        tempTree.Split(split_data, splitTree1, splitTree2);
+        tempTree = *tempTree.TwoWayJoin(&splitTree1, split_data, &splitTree2);
+        this->root = tempTree.root;
+    }
     bool isEmpty() {
         return root == nullptr;
     }
@@ -260,10 +273,7 @@ public:
         return false;
     }
     bool Insert(T data) {
-        if (isExist(data)) {
-            cout << "Tree has data " << data << "." << endl;
-            return false;
-        }
+        if (isExist(data)) return false;
         TreeNode<T>* insertNode = new TreeNode<T>();
         insertNode->data = data;
         if (isEmpty()) {
@@ -279,17 +289,12 @@ public:
         }
         if (data < leafNode->data) leafNode->leftChild = insertNode;
         else leafNode->rightChild = insertNode;
+        calculateBalanceFactor();
         return true;
     }
     bool Delete(T data) {
-        if (isEmpty()) {
-            cout << "empty root" << endl;
-            return false;
-        }
-        if (!isExist(data)) {
-            cout << "Tree has no data " << data << "." << endl;
-            return false;
-        }
+        if (isEmpty()) return false;
+        if (!isExist(data)) return false;
         TreeNode<T>* PrevNode = nullptr;
         TreeNode<T>* DeletedNode = root;
         while (DeletedNode and DeletedNode->data != data) {
@@ -348,16 +353,27 @@ public:
     bool isBalanced() {
         return isBalanced(root);
     }
-    T DeleteLargestElement() {
-        InorderIterator<T> inorderIterator(*this);
-        T* temp_element = inorderIterator.Next();
-        T max_element = 0;
-        while (temp_element) {
-            if (max_element < *temp_element) max_element = *temp_element;
-            temp_element = inorderIterator.Next();
+    TreeNode<T>* getUnbalancedTreeNode() {
+        Stack<TreeNode<T>*> stack;
+        TreeNode<T>* currentNode = root;
+        while (true) {
+            while (currentNode) {
+                stack.push(currentNode);
+                currentNode = currentNode->leftChild;
+            }
+            if (!stack.isEmpty()) {
+                currentNode = *stack.pop();
+                if (currentNode->balanceFactor >= 3 || currentNode->balanceFactor <= -3) return currentNode;
+                currentNode = currentNode->rightChild;
+            }
+            else break;
         }
-        Delete(max_element);
-        return max_element;
+        return nullptr;
+    }
+    T getSplitData(TreeNode<T>* unbalancedTreeNode) {
+        if (unbalancedTreeNode->getBalanceFactor() >= 3) return unbalancedTreeNode->leftChild->data;
+        else if (unbalancedTreeNode->getBalanceFactor() <= -3) return unbalancedTreeNode->rightChild->data;
+        return 0;
     }
     void Split(T i, Tree<T>& B, Tree<T>& C) {
         if (isEmpty()) {
@@ -401,21 +417,15 @@ public:
             }
         }
     }
-    static Tree<T>* ThreeWayJoin(Tree<T>* A, T root_data, Tree<T>* B) {
+    Tree<T>* TwoWayJoin(Tree<T>* A, T root_data, Tree<T>* B) {
         TreeNode<T>* newRootNode = new TreeNode<T>();
         newRootNode->data = root_data;
-        newRootNode->leftChild = A->root;
-        newRootNode->rightChild = B->root;
+        newRootNode->leftChild = copy(A->root);
+        newRootNode->rightChild = copy(B->root);
         Tree<T>* newTree = new Tree<T>();
         newTree->root = newRootNode;
+        newTree->calculateBalanceFactor();
         return newTree;
-    }
-    static Tree<T>* TwoWayJoin(Tree<T>* A, Tree<T>* B) {
-        if (!A and !B) return nullptr;
-        if (!A) return B;
-        if (!B) return A;
-        T LargestData = A->DeleteLargestElement();
-        return ThreeWayJoin(A, LargestData, B);
     }
     friend bool operator == (const Tree<T>& a, const Tree<T>& b) {
         return TreeNode<T>::Compare(a.root, b.root);
@@ -521,15 +531,14 @@ public:
 //</editor-fold>
 
 int main(void) {
-    int item_count, remove_element, temp, split_data; char select;
     srand(time(nullptr));
 
-    Tree<int> tree;
+    char select;
+    Tree<int> tree = Tree<int>();
     do {
         cout << "\nBinarySearchTree Test" << endl
              << "[i]: Insert" << endl
              << "[r]: Remove" << endl
-             << "[s]: split and join" << endl
              << "[d]: print inorder" << endl
              << "[k]: print levelorder" << endl
              << "[g]: print postorder" << endl
@@ -539,29 +548,36 @@ int main(void) {
              << "=>";
         cin >> select;
         switch (select) {
-            case 'i':
+            case 'i': {
                 cout << "The number of items =";
-                cin >> item_count;
+                int item_count; cin >> item_count;
                 for (int i = 0; i < item_count; i++) {
-                    temp = rand() % 100;
-                    if (!tree.Insert(temp))
-                        cout << "Insert Duplicated data" << endl;
-                    tree.calculateBalanceFactor();
-                    if (!tree.isBalanced()) {
-                        cout << "This tree is not balanced" << endl;
+                    int insertValue = rand() % 100;
+                    cout << "Insert " << insertValue << endl;
+                    if (!tree.Insert(insertValue))
+                        cout << "   Duplicated data" << endl;
+                    else {
+                        tree.calculateBalanceFactor();
+                        if (!tree.isBalanced()) {
+                            cout << "Detecting unbalanced, re-balancing" << endl;
+                            cout << "--- Prev ---" << endl;
+                            tree.printInorder();
+                            cout << "\n--- Next ---" << endl;
+                            tree.reBalancing();
+                            tree.printInorder();
+                            cout << endl;
+                        }
                     }
                 }
                 break;
-            case 'r':
+            }
+            case 'r': {
                 cout << "removed element =";
-                cin >> remove_element;
+                int remove_element; cin >> remove_element;
                 if (tree.Delete(remove_element))
                     cout << "Successfully deleted " << remove_element << endl;
                 else
                     cout << "Failed delete" << endl;
-                break;
-            case 's': {
-                cout << "isBalanced: " << tree.isBalanced() << endl;
                 break;
             }
             case 'd': {
