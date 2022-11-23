@@ -119,6 +119,7 @@ private:
     TreeNode* leftChild;
     TreeNode* rightChild;
     T data;
+    int balanceFactor;
     TreeNode() {
         leftChild = rightChild = nullptr;
     }
@@ -136,6 +137,10 @@ public:
             return true;
         return false;
     }
+    friend ostream& operator << (ostream& os, TreeNode<T> treeNode) {
+        os << "{data:" << treeNode.data << ", bF:" << treeNode.balanceFactor << "}";
+        return os;
+    }
 };
 //</editor-fold>
 
@@ -150,7 +155,7 @@ private:
     void printInorder(TreeNode<T>* currentNode) {
         if (currentNode) {
             printInorder(currentNode->leftChild);
-            cout << " " << currentNode->data;
+            cout << " " << *currentNode;
             printInorder(currentNode->rightChild);
         }
     }
@@ -158,12 +163,12 @@ private:
         if (currentNode) {
             printPostorder(currentNode->leftChild);
             printPostorder(currentNode->rightChild);
-            cout << " " << currentNode->data;
+            cout << " " << *currentNode;
         }
     }
     void printPreorder(TreeNode<T>* currentNode) {
         if (currentNode) {
-            cout << " " << currentNode->data;
+            cout << " " << *currentNode;
             printPreorder(currentNode->leftChild);
             printPreorder(currentNode->rightChild);
         }
@@ -175,6 +180,18 @@ private:
         root_temp->leftChild = copy(originalNode->leftChild);
         root_temp->rightChild = copy(originalNode->rightChild);
         return root_temp;
+    }
+    int calculateBalanceFactor(TreeNode<T>* t) {
+        if (!t) return 0;
+        int left = calculateBalanceFactor(t->leftChild);
+        int right = calculateBalanceFactor(t->rightChild);
+        t->balanceFactor = left - right;
+        return 1 + std::max(left, right);
+    }
+    bool isBalanced(TreeNode<T>* t) {
+        if (!t) return true;
+        return (t->balanceFactor < 3 && t->balanceFactor > -3)
+                && (isBalanced(t->leftChild)) && (isBalanced(t->rightChild));
     }
 public:
     Tree() {
@@ -206,7 +223,7 @@ public:
             }
             if (!stack.isEmpty()) {
                 currentNode = *stack.pop();
-                cout << currentNode->data << " ";
+                cout << *currentNode << " ";
                 currentNode = currentNode->rightChild;
             }
             else break;
@@ -220,12 +237,15 @@ public:
         while (true) {
             if (!queue.isEmpty()) {
                 currentNode = *queue.pop();
-                cout << currentNode->data << " ";
+                cout << *currentNode << " ";
                 if (currentNode->leftChild) queue.push(currentNode->leftChild);
                 if (currentNode->rightChild) queue.push(currentNode->rightChild);
             }
             else break;
         }
+    }
+    void calculateBalanceFactor() {
+        calculateBalanceFactor(root);
     }
     bool isEmpty() {
         return root == nullptr;
@@ -240,24 +260,25 @@ public:
         return false;
     }
     bool Insert(T data) {
+        if (isExist(data)) {
+            cout << "Tree has data " << data << "." << endl;
+            return false;
+        }
         TreeNode<T>* insertNode = new TreeNode<T>();
         insertNode->data = data;
         if (isEmpty()) {
             root = insertNode;
             return true;
         }
+        TreeNode<T>* leafNode = nullptr;
         TreeNode<T>* tempNode = root;
-        TreeNode<T>* insertPosition = nullptr;
         while (tempNode) {
-            insertPosition = tempNode;
-            if (data == tempNode->data) return false;
-            else if (data < tempNode->data) tempNode = tempNode->leftChild;
-            else if (data > tempNode->data) tempNode = tempNode->rightChild;
+            leafNode = tempNode;
+            if (data < tempNode->data) tempNode = tempNode->leftChild;
+            else tempNode = tempNode->rightChild;
         }
-        if (data < insertPosition->data)
-            insertPosition->leftChild = insertNode;
-        else if (data > insertPosition->data)
-            insertPosition->rightChild = insertNode;
+        if (data < leafNode->data) leafNode->leftChild = insertNode;
+        else leafNode->rightChild = insertNode;
         return true;
     }
     bool Delete(T data) {
@@ -278,55 +299,54 @@ public:
             else
                 DeletedNode = DeletedNode->leftChild;
         }
-        if (!DeletedNode)
-            cout << "Tree has no element " << data << ".\n";
-        else {
-            if (!DeletedNode->leftChild and !DeletedNode->rightChild) {
-                if (DeletedNode == root)
-                    root = nullptr;
-                else {
-                    if (data < PrevNode->data)
-                        PrevNode->leftChild = nullptr;
-                    else
-                        PrevNode->rightChild = nullptr;
-                }
-                free(DeletedNode);
-            }
-            else if (DeletedNode->leftChild and !DeletedNode->rightChild) {
-                if (DeletedNode == root)
-                    root = DeletedNode->leftChild;
-                else {
-                    TreeNode<T>* tempNode = DeletedNode->leftChild;
-                    if (data < PrevNode->data)
-                        PrevNode->leftChild = tempNode;
-                    else
-                        PrevNode->rightChild = tempNode;
-                }
-                free(DeletedNode);
-            }
-            else if (!DeletedNode->leftChild and DeletedNode->rightChild) {
-                if (DeletedNode == root)
-                    root = DeletedNode->rightChild;
-                else {
-                    TreeNode<T>* tempNode = DeletedNode->rightChild;
-                    if (data < PrevNode->data)
-                        PrevNode->leftChild = tempNode;
-                    else
-                        PrevNode->rightChild = tempNode;
-                }
-                free(DeletedNode);
-            }
+        if (!DeletedNode->leftChild and !DeletedNode->rightChild) {
+            if (DeletedNode == root)
+                root = nullptr;
             else {
-                InorderIterator<T> inorderSuccessor(*this);
-                T tempData = *inorderSuccessor.Next();
-                while (tempData != data)
-                    tempData = *inorderSuccessor.Next();
-                tempData = *inorderSuccessor.Next();
-                Delete(tempData);
-                DeletedNode->data = tempData;
+                if (data < PrevNode->data)
+                    PrevNode->leftChild = nullptr;
+                else
+                    PrevNode->rightChild = nullptr;
             }
+            free(DeletedNode);
+        }
+        else if (DeletedNode->leftChild and !DeletedNode->rightChild) {
+            if (DeletedNode == root)
+                root = DeletedNode->leftChild;
+            else {
+                TreeNode<T>* tempNode = DeletedNode->leftChild;
+                if (data < PrevNode->data)
+                    PrevNode->leftChild = tempNode;
+                else
+                    PrevNode->rightChild = tempNode;
+            }
+            free(DeletedNode);
+        }
+        else if (!DeletedNode->leftChild and DeletedNode->rightChild) {
+            if (DeletedNode == root)
+                root = DeletedNode->rightChild;
+            else {
+                TreeNode<T>* tempNode = DeletedNode->rightChild;
+                if (data < PrevNode->data)
+                    PrevNode->leftChild = tempNode;
+                else
+                    PrevNode->rightChild = tempNode;
+            }
+            free(DeletedNode);
+        }
+        else {
+            InorderIterator<T> inorderSuccessor(*this);
+            T tempData = *inorderSuccessor.Next();
+            while (tempData != data)
+                tempData = *inorderSuccessor.Next();
+            tempData = *inorderSuccessor.Next();
+            Delete(tempData);
+            DeletedNode->data = tempData;
         }
         return true;
+    }
+    bool isBalanced() {
+        return isBalanced(root);
     }
     T DeleteLargestElement() {
         InorderIterator<T> inorderIterator(*this);
@@ -523,9 +543,13 @@ int main(void) {
                 cout << "The number of items =";
                 cin >> item_count;
                 for (int i = 0; i < item_count; i++) {
-                    temp = rand() % 50;
+                    temp = rand() % 100;
                     if (!tree.Insert(temp))
                         cout << "Insert Duplicated data" << endl;
+                    tree.calculateBalanceFactor();
+                    if (!tree.isBalanced()) {
+                        cout << "This tree is not balanced" << endl;
+                    }
                 }
                 break;
             case 'r':
@@ -537,29 +561,7 @@ int main(void) {
                     cout << "Failed delete" << endl;
                 break;
             case 's': {
-                Tree<int> temp_tree(tree);
-                Tree<int> splitTree1, splitTree2, joinedTree;
-                cout << "input splited tree note :";
-                cin >> split_data;
-                temp_tree.Split(split_data, splitTree1, splitTree2);
-                cout << "=========== ThreeWayJoin ===========" << endl;
-                cout << "split_data = " << split_data << endl;
-                cout << "splitTree1: " << endl;
-                splitTree1.printPreorder();
-                cout << "\nsplitTree2: " << endl;
-                splitTree2.printPreorder();
-                joinedTree = *Tree<int>::ThreeWayJoin(&splitTree1, split_data, &splitTree2);
-                cout << "\nThreeWayJoin Tree: " << endl;
-                joinedTree.printPreorder();
-                cout << "\n=========== TwoWayJoin ===========" << endl;
-                cout << "splitTree1: " << endl;
-                splitTree1.printPreorder();
-                cout << "\nsplitTree2: " << endl;
-                splitTree2.printPreorder();
-                cout << "\nTwoWayJoin Tree: " << endl;
-                joinedTree = *Tree<int>::TwoWayJoin(&splitTree1, &splitTree2);
-                joinedTree.printPreorder();
-                cout << endl;
+                cout << "isBalanced: " << tree.isBalanced() << endl;
                 break;
             }
             case 'd': {
